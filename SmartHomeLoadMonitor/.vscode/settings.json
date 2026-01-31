@@ -1,0 +1,10 @@
+{
+    "java.project.sourcePaths": [
+        "src/main/java"
+    ],
+    "java.project.outputPath": "bin",
+    "java.project.referencedLibraries": [
+        "C:\\javafx-sdk-21.0.10\\javafx-sdk-21.0.10\\lib\\**/*.jar"
+    ],
+    "java.configuration.updateBuildConfiguration": "automatic"
+}
