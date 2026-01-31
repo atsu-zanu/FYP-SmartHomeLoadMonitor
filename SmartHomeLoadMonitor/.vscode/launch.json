@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch SmartLoadApp",
+            "request": "launch",
+            "mainClass": "com.smartload.SmartLoadApp",
+            "projectName": "SmartHomeLoadMonitor",
+            "vmArgs": "--module-path \"C:\\javafx-sdk-21.0.10\\javafx-sdk-21.0.10\\lib\" --add-modules javafx.controls,javafx.fxml,javafx.graphics",
+            "console": "integratedTerminal"
+        }
+    ]
+}
