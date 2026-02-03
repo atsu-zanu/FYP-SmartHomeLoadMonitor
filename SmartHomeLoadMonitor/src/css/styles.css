@@ -1,76 +1,648 @@
-/* Smart Home Load Monitor Stylesheet */
+/* ========================================
+   Smart Home Energy Monitor - Modern CSS
+   ======================================== */
 
 .root {
-    -fx-font-family: "Arial";
-    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: #f5f7fa;
 }
 
-/* Buttons */
-.button {
-    -fx-padding: 8 15 8 15;
-    -fx-background-radius: 4;
-    -fx-cursor: hand;
-}
+/* ========================================
+   TABLE STYLING
+   ======================================== */
 
-.button:hover {
-    -fx-opacity: 0.9;
-}
-
-/* Tables */
 .table-view {
-    -fx-background-color: white;
-    -fx-border-color: #bdc3c7;
-    -fx-border-radius: 5;
+    -fx-background-color: transparent;
+    -fx-background-radius: 12;
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color: transparent;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #667eea;
+    -fx-background-radius: 12 12 0 0;
 }
 
 .table-view .column-header {
-    -fx-background-color: #34495e;
+    -fx-background-color: transparent;
     -fx-text-fill: white;
     -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-padding: 15 10 15 10;
+    -fx-border-color: transparent;
+    -fx-alignment: CENTER-LEFT;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-padding: 12 10 12 10;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+    -fx-text-fill: #2c3e50;
+    -fx-alignment: CENTER-LEFT;
+}
+
+.table-row-cell {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: rgba(236, 240, 241, 0.3);
+}
+
+.table-row-cell:even {
+    -fx-background-color: white;
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #3498db;
-    -fx-text-fill: white;
-}
-
-/* List Views */
-.list-view {
-    -fx-background-color: white;
-    -fx-border-color: #bdc3c7;
-}
-
-.list-cell:filled:selected {
-    -fx-background-color: #3498db;
-    -fx-text-fill: white;
-}
-
-/* Progress Bar */
-.progress-bar .bar {
-    -fx-background-color: #27ae60;
-}
-
-/* Labels */
-.label-title {
-    -fx-font-size: 18px;
-    -fx-font-weight: bold;
+    -fx-background-color: rgba(102, 126, 234, 0.15);
     -fx-text-fill: #2c3e50;
 }
 
-.label-stat {
-    -fx-font-size: 14px;
+.table-row-cell:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.08);
+    -fx-cursor: hand;
+}
+
+.table-view .filler {
+    -fx-background-color: transparent;
+}
+
+/* ========================================
+   LIST VIEW STYLING
+   ======================================== */
+
+.list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 5 8 5 8;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.05);
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: transparent;
+}
+
+.list-view .virtual-flow .scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+
+.list-view .virtual-flow .scroll-bar:horizontal {
+    -fx-background-color: transparent;
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: rgba(102, 126, 234, 0.3);
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.5);
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: rgba(102, 126, 234, 0.7);
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: " ";
+    -fx-padding: 0;
+}
+
+.scroll-bar:vertical .track {
+    -fx-background-color: rgba(236, 240, 241, 0.3);
+    -fx-background-radius: 5;
+}
+
+.scroll-bar:horizontal .track {
+    -fx-background-color: rgba(236, 240, 241, 0.3);
+    -fx-background-radius: 5;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .corner {
+    -fx-background-color: transparent;
+}
+
+/* ========================================
+   CHART STYLING
+   ======================================== */
+
+.chart {
+    -fx-background-color: transparent;
+    -fx-padding: 10;
+}
+
+.chart-content {
+    -fx-padding: 10;
+}
+
+.chart-plot-background {
+    -fx-background-color: #fafbfc;
+    -fx-background-radius: 8;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: rgba(189, 195, 199, 0.2);
+    -fx-stroke-width: 1;
+}
+
+.chart-vertical-zero-line,
+.chart-horizontal-zero-line {
+    -fx-stroke: rgba(189, 195, 199, 0.4);
+    -fx-stroke-width: 1.5;
+}
+
+.axis {
+    -fx-tick-label-fill: #7f8c8d;
+    -fx-font-size: 11px;
+    -fx-tick-length: 6;
+}
+
+.axis-label {
+    -fx-text-fill: #2c3e50;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
 }
 
-/* Status indicators */
-.status-ok {
-    -fx-text-fill: #27ae60;
+.axis-tick-mark {
+    -fx-stroke: #bdc3c7;
 }
 
-.status-warning {
-    -fx-text-fill: #f39c12;
+/* Bar Chart Specific */
+.chart-bar {
+    -fx-background-color: linear-gradient(to top, #667eea 0%, #764ba2 100%);
+    -fx-background-radius: 6 6 0 0;
+    -fx-border-radius: 6 6 0 0;
 }
 
-.status-danger {
-    -fx-text-fill: #e74c3c;
+.default-color0.chart-bar {
+    -fx-background-color: linear-gradient(to top, #3498db 0%, #2980b9 100%);
+}
+
+.chart-bar:hover {
+    -fx-opacity: 0.8;
+    -fx-cursor: hand;
+}
+
+/* ========================================
+   SEPARATOR STYLING
+   ======================================== */
+
+.separator {
+    -fx-background-color: transparent;
+}
+
+.separator .line {
+    -fx-border-color: rgba(189, 195, 199, 0.2);
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ========================================
+   BUTTON STYLING
+   ======================================== */
+
+.button {
+    -fx-background-color: #667eea;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20 10 20;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+}
+
+.button:hover {
+    -fx-background-color: #5568D3;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 6, 0, 0, 3);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.button:pressed {
+    -fx-background-color: #4854B8;
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.button:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+}
+
+/* Toggle Buttons */
+.toggle-button {
+    -fx-background-color: #ecf0f1;
+    -fx-text-fill: #7f8c8d;
+    -fx-font-size: 12px;
+    -fx-background-radius: 8;
+    -fx-padding: 8 15 8 15;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.toggle-button:selected {
+    -fx-background-color: #667eea;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.toggle-button:hover {
+    -fx-background-color: #dfe6e9;
+}
+
+.toggle-button:selected:hover {
+    -fx-background-color: #5568D3;
+}
+
+/* ========================================
+   TEXT FIELD STYLING
+   ======================================== */
+
+.text-field {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #dfe6e9;
+    -fx-border-radius: 8;
+    -fx-border-width: 2;
+    -fx-padding: 10 12 10 12;
+    -fx-font-size: 13px;
+    -fx-text-fill: #2c3e50;
+}
+
+.text-field:focused {
+    -fx-border-color: #667eea;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(102, 126, 234, 0.2), 8, 0, 0, 0);
+}
+
+.text-field:hover {
+    -fx-border-color: #b2bec3;
+}
+
+/* ========================================
+   COMBO BOX STYLING
+   ======================================== */
+
+.combo-box {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #dfe6e9;
+    -fx-border-radius: 8;
+    -fx-border-width: 2;
+}
+
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 12 8 12;
+    -fx-text-fill: #2c3e50;
+}
+
+.combo-box:focused {
+    -fx-border-color: #667eea;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0 8 8 0;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #7f8c8d;
+}
+
+.combo-box:hover .arrow-button {
+    -fx-background-color: rgba(102, 126, 234, 0.05);
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #dfe6e9;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 3);
+}
+
+.combo-box-popup .list-cell:filled:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.1);
+}
+
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #667eea;
+    -fx-text-fill: white;
+}
+
+/* ========================================
+   PROGRESS BAR STYLING
+   ======================================== */
+
+.progress-bar {
+    -fx-background-radius: 6;
+    -fx-background-color: transparent;
+}
+
+.progress-bar .track {
+    -fx-background-color: rgba(223, 230, 233, 0.5);
+    -fx-background-radius: 6;
+    -fx-background-insets: 0;
+}
+
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #10ac84, #01a071);
+    -fx-background-radius: 6;
+    -fx-background-insets: 0;
+    -fx-padding: 6;
+}
+
+/* ========================================
+   DIALOG STYLING
+   ======================================== */
+
+.dialog-pane {
+    -fx-background-color: white;
+    -fx-background-radius: 15;
+    -fx-padding: 0;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: linear-gradient(to right, #667eea, #764ba2);
+    -fx-background-radius: 15 15 0 0;
+    -fx-padding: 20;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.dialog-pane .content {
+    -fx-padding: 20;
+}
+
+.dialog-pane .button-bar {
+    -fx-padding: 15 20 20 20;
+}
+
+.dialog-pane .button {
+    -fx-background-color: #667eea;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-padding: 10 20 10 20;
+    -fx-font-weight: bold;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: #5568D3;
+}
+
+.dialog-pane .button:default {
+    -fx-background-color: #10ac84;
+}
+
+.dialog-pane .button:default:hover {
+    -fx-background-color: #01a071;
+}
+
+.dialog-pane .button:cancel-button {
+    -fx-background-color: #95a5a6;
+}
+
+.dialog-pane .button:cancel-button:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+/* ========================================
+   LABEL STYLING
+   ======================================== */
+
+.label {
+    -fx-text-fill: #2c3e50;
+}
+
+/* ========================================
+   TOOLTIP STYLING
+   ======================================== */
+
+.tooltip {
+    -fx-background-color: #2c3e50;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-font-size: 12px;
+    -fx-padding: 8 12 8 12;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0, 0, 2);
+}
+
+/* ========================================
+   CUSTOM CARD EFFECTS
+   ======================================== */
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0, 0, 2);
+}
+
+.card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 12, 0, 0, 3);
+}
+
+/* ========================================
+   CUSTOM STAT BOXES
+   ======================================== */
+
+.stat-box {
+    -fx-background-radius: 10;
+    -fx-padding: 12;
+}
+
+.stat-box-green {
+    -fx-background-color: #10ac84;
+}
+
+.stat-box-blue {
+    -fx-background-color: #3498db;
+}
+
+.stat-box-purple {
+    -fx-background-color: #667eea;
+}
+
+.stat-box-orange {
+    -fx-background-color: #f39c12;
+}
+
+.stat-box-red {
+    -fx-background-color: #e74c3c;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+.animated-hover {
+    -fx-cursor: hand;
+}
+
+.animated-hover:hover {
+    -fx-scale-x: 1.03;
+    -fx-scale-y: 1.03;
+}
+
+/* ========================================
+   CONTEXT MENU
+   ======================================== */
+
+.context-menu {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #dfe6e9;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 10, 0, 0, 3);
+}
+
+.context-menu .menu-item {
+    -fx-padding: 8 15 8 15;
+}
+
+.context-menu .menu-item:hover {
+    -fx-background-color: rgba(102, 126, 234, 0.1);
+}
+
+.context-menu .menu-item .label {
+    -fx-text-fill: #2c3e50;
+}
+
+/* ========================================
+   SPINNER
+   ======================================== */
+
+.spinner {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #dfe6e9;
+    -fx-border-radius: 8;
+}
+
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: #f8f9fa;
+    -fx-background-radius: 0 8 0 0;
+}
+
+.spinner .increment-arrow-button:hover,
+.spinner .decrement-arrow-button:hover {
+    -fx-background-color: #ecf0f1;
+}
+
+/* ========================================
+   CHECK BOX & RADIO BUTTON
+   ======================================== */
+
+.check-box,
+.radio-button {
+    -fx-text-fill: #2c3e50;
+}
+
+.check-box .box,
+.radio-button .radio {
+    -fx-background-color: white;
+    -fx-border-color: #dfe6e9;
+    -fx-border-width: 2;
+    -fx-border-radius: 4;
+}
+
+.check-box:selected .box,
+.radio-button:selected .radio {
+    -fx-background-color: #667eea;
+    -fx-border-color: #667eea;
+}
+
+.check-box .mark,
+.radio-button .dot {
+    -fx-background-color: white;
+}
+
+/* ========================================
+   TAB PANE
+   ======================================== */
+
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 10 0;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #ecf0f1;
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 10 20 10 20;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: white;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #7f8c8d;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #667eea;
+}
+
+.tab-pane .tab-content-area {
+    -fx-background-color: white;
+    -fx-background-radius: 0 12 12 12;
+    -fx-padding: 20;
 }

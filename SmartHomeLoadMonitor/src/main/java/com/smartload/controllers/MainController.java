@@ -2,111 +2,522 @@ package com.smartload.controllers;
 
 import com.smartload.models.*;
 import com.smartload.services.MonitoringService;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Parent;
+import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.util.Duration;
 
-/**
- * Main controller for the application UI
- */
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
 public class MainController {
     
     private final MonitoringService monitoringService;
     private TableView<Appliance> applianceTable;
-    private ListView<com.smartload.models.Alert> alertsList;  // Fixed: Full class name
-    private HBox totalCurrentLabel;  // Fixed: Changed from Label to HBox
-    private HBox totalPowerLabel;    // Fixed: Changed from Label to HBox
-    private HBox energyLabel;        // Fixed: Changed from Label to HBox
-    private HBox costLabel;          // Fixed: Changed from Label to HBox
-    private Label statusLabel;
-    private VBox socketGroupsBox;
+    private ListView<com.smartload.models.Alert> alertsList;
+    private Label totalCurrentValueLabel;
+    private Label totalPowerValueLabel;
+    private Label energyValueLabel;
+    private Label costValueLabel;
+    private Label voltageValueLabel;
+    private Button startBtn;
+    private Button stopBtn;
+    
+    // Charts
+    private LineChart<Number, Number> realTimeLineChart;
+    private BarChart<String, Number> socketGroupBarChart;
+    private PieChart appliancePieChart;
+    private LineChart<String, Number> historicalComparisonChart;
+    private BarChart<String, Number> dailyUsageChart;
+    
+    // Data storage
+    private int timeCounter = 0;
+    private static final int MAX_DATA_POINTS = 50;
+    private XYChart.Series<Number, Number> currentSeries;
+    private XYChart.Series<Number, Number> powerSeries;
+    private XYChart.Series<Number, Number> voltageSeries;
+    
+    private LinkedList<Double> historicalData = new LinkedList<>();
+    private Timeline updateTimeline;
     
     public MainController() {
         this.monitoringService = MonitoringService.getInstance();
+        initializeDataStructures();
+    }
+    
+    private void initializeDataStructures() {
+        currentSeries = new XYChart.Series<>();
+        currentSeries.setName("Current (A)");
+        
+        powerSeries = new XYChart.Series<>();
+        powerSeries.setName("Power (W)");
+        
+        voltageSeries = new XYChart.Series<>();
+        voltageSeries.setName("Voltage (V)");
+        
+        for (int i = 0; i < 24; i++) {
+            historicalData.add(Math.random() * 30 + 10);
+        }
     }
     
     public Parent createView() {
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(10));
+        root.setStyle("-fx-background-color: #f5f7fa;");
         
-        root.setTop(createToolbar());
-        root.setLeft(createAppliancePanel());
-        root.setRight(createSummaryPanel());
-        root.setBottom(createAlertsPanel());
+        VBox mainContent = new VBox(0);
+        mainContent.getChildren().addAll(
+            createModernHeader(),
+            createDashboardContent()
+        );
         
-        root.setStyle("-fx-background-color: #f4f4f4;");
+        root.setCenter(mainContent);
+        
+        startUpdateTimeline();
         
         return root;
     }
     
-    /**
-     * Create top toolbar with controls
-     */
-    private HBox createToolbar() {
-        HBox toolbar = new HBox(15);
-        toolbar.setPadding(new Insets(10));
-        toolbar.setAlignment(Pos.CENTER_LEFT);
-        toolbar.setStyle("-fx-background-color: #2c3e50; -fx-background-radius: 5;");
+    private void startUpdateTimeline() {
+        updateTimeline = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
+            if (monitoringService.isRunning()) {
+                updateRealTimeCharts();
+            }
+        }));
+        updateTimeline.setCycleCount(Animation.INDEFINITE);
+        updateTimeline.play();
+    }
+    
+    private HBox createModernHeader() {
+        HBox header = new HBox(20);
+        header.setPadding(new Insets(20, 30, 20, 30));
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setStyle(
+            "-fx-background-color: linear-gradient(to right, #667eea 0%, #764ba2 100%);"
+        );
         
+        VBox titleBox = new VBox(3);
         Label title = new Label("⚡ Smart Home Load Monitor");
-        title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        title.setFont(Font.font("Arial", FontWeight.BOLD, 24));
         title.setTextFill(Color.WHITE);
+        
+        Label subtitle = new Label("Advanced Analytics & Real-time Monitoring");
+        subtitle.setFont(Font.font("Arial", 13));
+        subtitle.setTextFill(Color.web("#ffffff", 0.8));
+        
+        titleBox.getChildren().addAll(title, subtitle);
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        Button startBtn = new Button("▶ Start");
-        startBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;");
+        HBox controlBox = new HBox(10);
+        controlBox.setAlignment(Pos.CENTER_RIGHT);
+        
+        startBtn = createHeaderButton("▶ Start", "#10ac84");
+        stopBtn = createHeaderButton("⏹ Stop", "#ee5a6f");
+        Button settingsBtn = createHeaderButton("⚙", "#34495e");
+        
         startBtn.setOnAction(e -> {
             monitoringService.start();
             startBtn.setDisable(true);
+            stopBtn.setDisable(false);
         });
         
-        Button stopBtn = new Button("⏸ Stop");
-        stopBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;");
         stopBtn.setOnAction(e -> {
             monitoringService.stop();
             startBtn.setDisable(false);
+            stopBtn.setDisable(true);
         });
         
-        Button settingsBtn = new Button("⚙ Settings");
-        settingsBtn.setStyle("-fx-background-color: #34495e; -fx-text-fill: white;");
+        stopBtn.setDisable(true);
         settingsBtn.setOnAction(e -> showSettingsDialog());
         
-        toolbar.getChildren().addAll(title, spacer, startBtn, stopBtn, settingsBtn);
-        return toolbar;
+        controlBox.getChildren().addAll(startBtn, stopBtn, settingsBtn);
+        
+        header.getChildren().addAll(titleBox, spacer, controlBox);
+        return header;
     }
     
-    /**
-     * Create appliance table panel
-     */
-    private VBox createAppliancePanel() {
-        VBox panel = new VBox(10);
-        panel.setPadding(new Insets(10));
-        panel.setPrefWidth(600);
-        panel.setStyle("-fx-background-color: white; -fx-background-radius: 5;");
+    private Button createHeaderButton(String text, String color) {
+        Button btn = new Button(text);
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        btn.setPadding(new Insets(10, 20, 10, 20));
+        btn.setStyle(
+            "-fx-background-color: " + color + ";" +
+            "-fx-text-fill: white;" +
+            "-fx-background-radius: 8;" +
+            "-fx-cursor: hand;"
+        );
         
-        Label heading = new Label("📊 Appliances");
-        heading.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        btn.setOnMouseEntered(e -> btn.setOpacity(0.8));
+        btn.setOnMouseExited(e -> btn.setOpacity(1.0));
+        
+        return btn;
+    }
+    
+    private ScrollPane createDashboardContent() {
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent;");
+        
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(20, 30, 20, 30));
+        
+        // Top Statistics Row
+        HBox topStats = createTopStatsRow();
+        
+        // Real-time Line Chart Section
+        VBox realTimeSection = createRealTimeChartCard();
+        
+        // Middle Row: Socket Group Bar Chart + Pie Chart
+        HBox middleRow = new HBox(20);
+        VBox socketBarCard = createSocketGroupBarChart();
+        VBox pieCard = createAppliancePieChart();
+        HBox.setHgrow(socketBarCard, Priority.ALWAYS);
+        HBox.setHgrow(pieCard, Priority.ALWAYS);
+        middleRow.getChildren().addAll(socketBarCard, pieCard);
+        
+        // Historical Comparison Section
+        VBox historicalSection = createHistoricalComparisonCard();
+        
+        // Daily Usage Pattern
+        VBox dailyUsageSection = createDailyUsageCard();
+        
+        // Appliance Table
+        VBox applianceCard = createApplianceTableCard();
+        
+        // Alerts
+        VBox alertsCard = createAlertsCard();
+        
+        content.getChildren().addAll(
+            topStats,
+            realTimeSection,
+            middleRow,
+            historicalSection,
+            dailyUsageSection,
+            applianceCard,
+            alertsCard
+        );
+        
+        scrollPane.setContent(content);
+        return scrollPane;
+    }
+    
+    private HBox createTopStatsRow() {
+        HBox statsRow = new HBox(15);
+        statsRow.setAlignment(Pos.CENTER);
+        
+        totalPowerValueLabel = new Label("0 W");
+        VBox powerStat = createQuickStatCard("Total Power", totalPowerValueLabel, "🔋", "#10ac84");
+        
+        voltageValueLabel = new Label("230 V");
+        VBox voltageStat = createQuickStatCard("Voltage", voltageValueLabel, "⚡", "#f39c12");
+        
+        totalCurrentValueLabel = new Label("0.0 A");
+        VBox currentStat = createQuickStatCard("Current", totalCurrentValueLabel, "📊", "#3498db");
+        
+        energyValueLabel = new Label("0.00 kWh");
+        VBox energyStat = createQuickStatCard("Energy", energyValueLabel, "⚙", "#9b59b6");
+        
+        costValueLabel = new Label("GHS 0.00");
+        VBox costStat = createQuickStatCard("Cost", costValueLabel, "💰", "#e74c3c");
+        
+        statsRow.getChildren().addAll(powerStat, voltageStat, currentStat, energyStat, costStat);
+        
+        // Update listener
+        monitoringService.getEnergyTracker().currentPowerWattsProperty().addListener((obs, old, newVal) -> {
+            updateTopStats();
+        });
+        
+        return statsRow;
+    }
+    
+    private void updateTopStats() {
+        double totalCurrent = monitoringService.calculateTotalCurrent();
+        double totalPower = monitoringService.calculateTotalPower();
+        double voltage = monitoringService.getSettings().getVoltage();
+        double energy = monitoringService.getEnergyTracker().getSessionEnergyKwh();
+        double cost = monitoringService.getEnergyTracker().getSessionCostGhs();
+        
+        totalCurrentValueLabel.setText(String.format("%.2f A", totalCurrent));
+        totalPowerValueLabel.setText(String.format("%.0f W", totalPower));
+        voltageValueLabel.setText(String.format("%.0f V", voltage));
+        energyValueLabel.setText(String.format("%.3f kWh", energy));
+        costValueLabel.setText(String.format("GHS %.2f", cost));
+    }
+    
+    private VBox createQuickStatCard(String title, Label valueLabel, String icon, String color) {
+        VBox card = new VBox(5);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(15));
+        card.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 12;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 2);"
+        );
+        HBox.setHgrow(card, Priority.ALWAYS);
+        card.setMaxWidth(Double.MAX_VALUE);
+        
+        Label iconLabel = new Label(icon);
+        iconLabel.setFont(Font.font(28));
+        
+        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 22));
+        valueLabel.setTextFill(Color.web(color));
+        
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Arial", 12));
+        titleLabel.setTextFill(Color.web("#7f8c8d"));
+        
+        card.getChildren().addAll(iconLabel, valueLabel, titleLabel);
+        return card;
+    }
+    
+    // ==================== REAL-TIME LINE CHART ====================
+    
+    private VBox createRealTimeChartCard() {
+        VBox card = createDashboardCard("📈 Real-Time Power Trends");
+        
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabel("Time (seconds)");
+        xAxis.setAutoRanging(true);
+        xAxis.setForceZeroInRange(false);
+        
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Value");
+        yAxis.setAutoRanging(true);
+        
+        realTimeLineChart = new LineChart<>(xAxis, yAxis);
+        realTimeLineChart.setTitle("Live System Metrics");
+        realTimeLineChart.setAnimated(false);
+        realTimeLineChart.setCreateSymbols(false);
+        realTimeLineChart.setPrefHeight(300);
+        
+        realTimeLineChart.getData().addAll(currentSeries, powerSeries);
+        
+        VBox.setVgrow(realTimeLineChart, Priority.ALWAYS);
+        card.getChildren().add(realTimeLineChart);
+        return card;
+    }
+    
+    private void updateRealTimeCharts() {
+        double current = monitoringService.calculateTotalCurrent();
+        double power = monitoringService.calculateTotalPower() / 10; // Scale down for visibility
+        
+        currentSeries.getData().add(new XYChart.Data<>(timeCounter, current));
+        powerSeries.getData().add(new XYChart.Data<>(timeCounter, power));
+        
+        // Keep only last MAX_DATA_POINTS
+        if (currentSeries.getData().size() > MAX_DATA_POINTS) {
+            currentSeries.getData().remove(0);
+        }
+        if (powerSeries.getData().size() > MAX_DATA_POINTS) {
+            powerSeries.getData().remove(0);
+        }
+        
+        timeCounter++;
+        
+        // Update other charts
+        updateSocketGroupBarChart();
+        updateAppliancePieChart();
+    }
+    
+    // ==================== SOCKET GROUP BAR CHART ====================
+    
+    private VBox createSocketGroupBarChart() {
+        VBox card = createDashboardCard("🔌 Socket Group Comparison");
+        
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setLabel("Socket Groups");
+        
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Current (A)");
+        
+        socketGroupBarChart = new BarChart<>(xAxis, yAxis);
+        socketGroupBarChart.setTitle("Current Usage by Circuit");
+        socketGroupBarChart.setLegendVisible(false);
+        socketGroupBarChart.setPrefHeight(350);
+        socketGroupBarChart.setBarGap(3);
+        socketGroupBarChart.setCategoryGap(10);
+        
+        XYChart.Series<String, Number> series = new XYChart.Series<>();
+        series.setName("Current");
+        
+        for (SocketGroup group : monitoringService.getSocketGroups()) {
+            series.getData().add(new XYChart.Data<>(group.getName(), group.getTotalCurrent()));
+        }
+        
+        socketGroupBarChart.getData().add(series);
+        
+        VBox.setVgrow(socketGroupBarChart, Priority.ALWAYS);
+        card.getChildren().add(socketGroupBarChart);
+        return card;
+    }
+    
+    private void updateSocketGroupBarChart() {
+        if (socketGroupBarChart.getData().isEmpty()) return;
+        
+        XYChart.Series<String, Number> series = socketGroupBarChart.getData().get(0);
+        series.getData().clear();
+        
+        for (SocketGroup group : monitoringService.getSocketGroups()) {
+            XYChart.Data<String, Number> data = new XYChart.Data<>(group.getName(), group.getTotalCurrent());
+            series.getData().add(data);
+        }
+    }
+    
+    // ==================== APPLIANCE PIE CHART ====================
+    
+    private VBox createAppliancePieChart() {
+        VBox card = createDashboardCard("🥧 Energy Distribution");
+        
+        appliancePieChart = new PieChart();
+        appliancePieChart.setTitle("Power Consumption by Appliance");
+        appliancePieChart.setLegendSide(Side.RIGHT);
+        appliancePieChart.setPrefHeight(350);
+        appliancePieChart.setLabelsVisible(true);
+        
+        updateAppliancePieChart();
+        
+        VBox.setVgrow(appliancePieChart, Priority.ALWAYS);
+        card.getChildren().add(appliancePieChart);
+        return card;
+    }
+    
+    private void updateAppliancePieChart() {
+        appliancePieChart.getData().clear();
+        
+        List<Appliance> activeAppliances = monitoringService.getAppliances().stream()
+            .filter(a -> a.isOn() && a.getCurrentDraw() > 0)
+            .toList();
+        
+        if (activeAppliances.isEmpty()) {
+            appliancePieChart.getData().add(new PieChart.Data("No Active Appliances", 1));
+            return;
+        }
+        
+        for (Appliance appliance : activeAppliances) {
+            double power = appliance.calculatePower(monitoringService.getSettings().getVoltage());
+            if (power > 0) {
+                PieChart.Data slice = new PieChart.Data(
+                    appliance.getName() + " (" + String.format("%.0fW", power) + ")", 
+                    power
+                );
+                appliancePieChart.getData().add(slice);
+            }
+        }
+        
+        // Apply colors
+        String[] colors = {"#3498db", "#2ecc71", "#f39c12", "#9b59b6", "#e74c3c", "#1abc9c", "#34495e", "#95a5a6"};
+        for (int i = 0; i < appliancePieChart.getData().size(); i++) {
+            final PieChart.Data data = appliancePieChart.getData().get(i);
+            data.getNode().setStyle("-fx-pie-color: " + colors[i % colors.length] + ";");
+        }
+    }
+    
+    // ==================== HISTORICAL COMPARISON CHART ====================
+    
+    private VBox createHistoricalComparisonCard() {
+        VBox card = createDashboardCard("📊 Historical Comparison");
+        
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setLabel("Time Period");
+        
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Energy (kWh)");
+        
+        historicalComparisonChart = new LineChart<>(xAxis, yAxis);
+        historicalComparisonChart.setTitle("Energy Consumption - Last 24 Hours");
+        historicalComparisonChart.setPrefHeight(300);
+        historicalComparisonChart.setCreateSymbols(true);
+        
+        XYChart.Series<String, Number> todaySeries = new XYChart.Series<>();
+        todaySeries.setName("Today");
+        
+        XYChart.Series<String, Number> yesterdaySeries = new XYChart.Series<>();
+        yesterdaySeries.setName("Yesterday");
+        
+        for (int i = 0; i < 24; i++) {
+            String hour = String.format("%02d:00", i);
+            todaySeries.getData().add(new XYChart.Data<>(hour, historicalData.get(i)));
+            yesterdaySeries.getData().add(new XYChart.Data<>(hour, historicalData.get(i) * 0.85));
+        }
+        
+        historicalComparisonChart.getData().addAll(todaySeries, yesterdaySeries);
+        
+        VBox.setVgrow(historicalComparisonChart, Priority.ALWAYS);
+        card.getChildren().add(historicalComparisonChart);
+        return card;
+    }
+    
+    // ==================== DAILY USAGE PATTERN ====================
+    
+    private VBox createDailyUsageCard() {
+        VBox card = createDashboardCard("📅 Daily Usage Pattern");
+        
+        CategoryAxis xAxis = new CategoryAxis();
+        xAxis.setLabel("Day of Week");
+        
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Energy (kWh)");
+        
+        dailyUsageChart = new BarChart<>(xAxis, yAxis);
+        dailyUsageChart.setTitle("Weekly Energy Consumption");
+        dailyUsageChart.setPrefHeight(300);
+        dailyUsageChart.setLegendVisible(true);
+        
+        XYChart.Series<String, Number> currentWeek = new XYChart.Series<>();
+        currentWeek.setName("This Week");
+        
+        XYChart.Series<String, Number> lastWeek = new XYChart.Series<>();
+        lastWeek.setName("Last Week");
+        
+        String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        Random rand = new Random();
+        
+        for (String day : days) {
+            currentWeek.getData().add(new XYChart.Data<>(day, 15 + rand.nextDouble() * 25));
+            lastWeek.getData().add(new XYChart.Data<>(day, 12 + rand.nextDouble() * 20));
+        }
+        
+        dailyUsageChart.getData().addAll(currentWeek, lastWeek);
+        
+        VBox.setVgrow(dailyUsageChart, Priority.ALWAYS);
+        card.getChildren().add(dailyUsageChart);
+        return card;
+    }
+    
+    // ==================== APPLIANCE TABLE ====================
+    
+    private VBox createApplianceTableCard() {
+        VBox card = createDashboardCard("⚡ Appliance Monitor");
         
         applianceTable = new TableView<>();
         applianceTable.setItems(monitoringService.getAppliances());
+        applianceTable.setPrefHeight(300);
         
-        TableColumn<Appliance, String> nameCol = new TableColumn<>("Name");
+        TableColumn<Appliance, String> nameCol = new TableColumn<>("Appliance");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(150);
+        nameCol.setPrefWidth(180);
         
         TableColumn<Appliance, String> locationCol = new TableColumn<>("Location");
         locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
         locationCol.setPrefWidth(120);
         
-        TableColumn<Appliance, String> groupCol = new TableColumn<>("Socket Group");
+        TableColumn<Appliance, String> groupCol = new TableColumn<>("Circuit");
         groupCol.setCellValueFactory(new PropertyValueFactory<>("socketGroup"));
         groupCol.setPrefWidth(120);
         
@@ -126,263 +537,170 @@ public class MainController {
                     } else if (item > 5.0) {
                         setStyle("-fx-text-fill: #f39c12; -fx-font-weight: bold;");
                     } else {
-                        setStyle("-fx-text-fill: #27ae60;");
+                        setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
                     }
                 }
             }
         });
         currentCol.setPrefWidth(100);
         
-        TableColumn<Appliance, String> priorityCol = new TableColumn<>("Priority");
-        priorityCol.setCellValueFactory(new PropertyValueFactory<>("priority"));
-        priorityCol.setPrefWidth(100);
-        
-        applianceTable.getColumns().addAll(nameCol, locationCol, groupCol, currentCol, priorityCol);
-        
-        VBox.setVgrow(applianceTable, Priority.ALWAYS);
-        panel.getChildren().addAll(heading, applianceTable);
-        
-        return panel;
-    }
-    
-    /**
-     * Create summary panel with stats
-     */
-    private VBox createSummaryPanel() {
-        VBox panel = new VBox(15);
-        panel.setPadding(new Insets(10));
-        panel.setPrefWidth(400);
-        
-        VBox summaryCard = createSummaryCard();
-        VBox socketGroupsCard = createSocketGroupsCard();
-        
-        panel.getChildren().addAll(summaryCard, socketGroupsCard);
-        return panel;
-    }
-    
-    /**
-     * Create summary statistics card
-     */
-    private VBox createSummaryCard() {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(15));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #bdc3c7; -fx-border-radius: 5;");
-        
-        Label heading = new Label("📈 System Summary");
-        heading.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        
-        totalCurrentLabel = createStatLabel("Total Current:", "0.0 A");
-        totalPowerLabel = createStatLabel("Power:", "0.0 W");
-        energyLabel = createStatLabel("Session Energy:", "0.00 kWh");
-        costLabel = createStatLabel("Estimated Cost:", "GHS 0.00");
-        statusLabel = new Label("Status: OK");
-        statusLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        statusLabel.setTextFill(Color.web("#27ae60"));
-        
-        monitoringService.getEnergyTracker().sessionEnergyKwhProperty().addListener((obs, old, newVal) -> {
-            updateSummaryLabels();
+        TableColumn<Appliance, Double> powerCol = new TableColumn<>("Power (W)");
+        powerCol.setCellValueFactory(cellData -> {
+            double power = cellData.getValue().calculatePower(230);
+            return new javafx.beans.property.SimpleDoubleProperty(power).asObject();
         });
-        
-        card.getChildren().addAll(heading, new Separator(), totalCurrentLabel, 
-            totalPowerLabel, energyLabel, costLabel, new Separator(), statusLabel);
-        
-        return card;
-    }
-    
-    /**
-     * Create socket groups status card
-     */
-    private VBox createSocketGroupsCard() {
-        VBox card = new VBox(10);
-        card.setPadding(new Insets(15));
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #bdc3c7; -fx-border-radius: 5;");
-        
-        Label heading = new Label("🔌 Socket Groups");
-        heading.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-        
-        socketGroupsBox = new VBox(8);
-        
-        for (SocketGroup group : monitoringService.getSocketGroups()) {
-            HBox groupDisplay = createSocketGroupDisplay(group);
-            socketGroupsBox.getChildren().add(groupDisplay);
-        }
-        
-        card.getChildren().addAll(heading, new Separator(), socketGroupsBox);
-        VBox.setVgrow(card, Priority.ALWAYS);
-        
-        return card;
-    }
-    
-    /**
-     * Create display for a single socket group
-     */
-    private HBox createSocketGroupDisplay(SocketGroup group) {
-        HBox display = new HBox(10);
-        display.setAlignment(Pos.CENTER_LEFT);
-        display.setPadding(new Insets(5));
-        display.setStyle("-fx-background-color: #ecf0f1; -fx-background-radius: 3;");
-        
-        Label nameLabel = new Label(group.getName());
-        nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        nameLabel.setPrefWidth(120);
-        
-        Label currentLabel = new Label("0.0 A");
-        currentLabel.setPrefWidth(60);
-        
-        ProgressBar loadBar = new ProgressBar(0);
-        loadBar.setPrefWidth(100);
-        
-        Label statusLabel = new Label("OK");
-        statusLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        statusLabel.setTextFill(Color.web("#27ae60"));
-        
-        group.totalCurrentProperty().addListener((obs, old, newVal) -> {
-            currentLabel.setText(String.format("%.1f A", newVal.doubleValue()));
-            loadBar.setProgress(newVal.doubleValue() / group.getRatedCapacity());
-            
-            SocketGroup.Status status = group.getStatus();
-            statusLabel.setText(status.toString());
-            switch (status) {
-                case OK:
-                    statusLabel.setTextFill(Color.web("#27ae60"));
-                    loadBar.setStyle("-fx-accent: #27ae60;");
-                    break;
-                case WARNING:
-                    statusLabel.setTextFill(Color.web("#f39c12"));
-                    loadBar.setStyle("-fx-accent: #f39c12;");
-                    break;
-                case DANGER:
-                    statusLabel.setTextFill(Color.web("#e74c3c"));
-                    loadBar.setStyle("-fx-accent: #e74c3c;");
-                    break;
+        powerCol.setCellFactory(col -> new TableCell<Appliance, Double>() {
+            @Override
+            protected void updateItem(Double item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.0f W", item));
+                }
             }
         });
+        powerCol.setPrefWidth(100);
         
-        display.getChildren().addAll(nameLabel, currentLabel, loadBar, statusLabel);
-        return display;
+        TableColumn<Appliance, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(cellData -> {
+            String status = cellData.getValue().isOn() ? "● ON" : "○ OFF";
+            return new javafx.beans.property.SimpleStringProperty(status);
+        });
+        statusCol.setCellFactory(col -> new TableCell<Appliance, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.contains("ON")) {
+                        setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
+                    } else {
+                        setStyle("-fx-text-fill: #95a5a6;");
+                    }
+                }
+            }
+        });
+        statusCol.setPrefWidth(80);
+        
+        applianceTable.getColumns().addAll(nameCol, locationCol, groupCol, currentCol, powerCol, statusCol);
+        
+        VBox.setVgrow(applianceTable, Priority.ALWAYS);
+        card.getChildren().add(applianceTable);
+        return card;
     }
     
-    /**
-     * Create alerts panel
-     */
-    private VBox createAlertsPanel() {
-        VBox panel = new VBox(10);
-        panel.setPadding(new Insets(10));
-        panel.setPrefHeight(200);
-        panel.setStyle("-fx-background-color: white; -fx-background-radius: 5;");
+    // ==================== ALERTS ====================
+    
+    private VBox createAlertsCard() {
+        VBox card = createDashboardCard("🔔 System Alerts");
         
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
-        
-        Label heading = new Label("🔔 Alerts");
-        heading.setFont(Font.font("Arial", FontWeight.BOLD, 16));
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
         Button clearBtn = new Button("Clear All");
+        clearBtn.setStyle(
+            "-fx-background-color: #e74c3c;" +
+            "-fx-text-fill: white;" +
+            "-fx-background-radius: 6;" +
+            "-fx-cursor: hand;" +
+            "-fx-padding: 6 12 6 12;"
+        );
         clearBtn.setOnAction(e -> monitoringService.clearAlerts());
         
-        header.getChildren().addAll(heading, spacer, clearBtn);
+        header.getChildren().addAll(spacer, clearBtn);
         
         alertsList = new ListView<>();
         alertsList.setItems(monitoringService.getAlerts());
-        alertsList.setCellFactory(lv -> new ListCell<com.smartload.models.Alert>() {  // Fixed: Full class name
+        alertsList.setPrefHeight(200);
+        alertsList.setCellFactory(lv -> new ListCell<com.smartload.models.Alert>() {
             @Override
-            protected void updateItem(com.smartload.models.Alert alert, boolean empty) {  // Fixed: Full class name
+            protected void updateItem(com.smartload.models.Alert alert, boolean empty) {
                 super.updateItem(alert, empty);
                 if (empty || alert == null) {
-                    setText(null);
-                    setStyle("");
+                    setGraphic(null);
                 } else {
-                    setText(String.format("[%s] %s: %s", 
-                        alert.getFormattedTimestamp(), 
-                        alert.getSeverity(), 
-                        alert.getMessage()));
+                    HBox alertBox = new HBox(15);
+                    alertBox.setAlignment(Pos.CENTER_LEFT);
+                    alertBox.setPadding(new Insets(10));
+                    alertBox.setStyle("-fx-background-radius: 8;");
+                    
+                    Label icon = new Label();
+                    icon.setFont(Font.font(20));
+                    
+                    VBox textBox = new VBox(3);
+                    Label messageLabel = new Label(alert.getMessage());
+                    messageLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+                    messageLabel.setWrapText(true);
+                    
+                    Label timeLabel = new Label(alert.getFormattedTimestamp());
+                    timeLabel.setFont(Font.font("Arial", 10));
+                    timeLabel.setTextFill(Color.web("#7f8c8d"));
+                    
+                    textBox.getChildren().addAll(messageLabel, timeLabel);
                     
                     switch (alert.getSeverity()) {
                         case INFO:
-                            setStyle("-fx-text-fill: #3498db;");
+                            icon.setText("ℹ️");
+                            alertBox.setStyle("-fx-background-color: #e3f2fd; -fx-background-radius: 8;");
+                            messageLabel.setTextFill(Color.web("#1976d2"));
                             break;
                         case WARNING:
-                            setStyle("-fx-text-fill: #f39c12;");
+                            icon.setText("⚠️");
+                            alertBox.setStyle("-fx-background-color: #fff8e1; -fx-background-radius: 8;");
+                            messageLabel.setTextFill(Color.web("#f57c00"));
                             break;
                         case DANGER:
-                            setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                            icon.setText("🚨");
+                            alertBox.setStyle("-fx-background-color: #ffebee; -fx-background-radius: 8;");
+                            messageLabel.setTextFill(Color.web("#c62828"));
                             break;
                     }
+                    
+                    alertBox.getChildren().addAll(icon, textBox);
+                    setGraphic(alertBox);
                 }
             }
         });
         
         VBox.setVgrow(alertsList, Priority.ALWAYS);
-        panel.getChildren().addAll(header, alertsList);
-        
-        return panel;
+        card.getChildren().addAll(header, alertsList);
+        return card;
     }
     
-    /**
-     * Create a styled stat label
-     */
-    private HBox createStatLabel(String title, String initialValue) {
-        HBox container = new HBox(10);
-        container.setAlignment(Pos.CENTER_LEFT);
+    // ==================== UTILITY METHODS ====================
+    
+    private VBox createDashboardCard(String title) {
+        VBox card = new VBox(15);
+        card.setPadding(new Insets(20));
+        card.setStyle(
+            "-fx-background-color: white;" +
+            "-fx-background-radius: 15;" +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0, 0, 2);"
+        );
         
-        Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", 12));
-        titleLabel.setPrefWidth(130);
+        Label heading = new Label(title);
+        heading.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        heading.setTextFill(Color.web("#2c3e50"));
         
-        Label valueLabel = new Label(initialValue);
-        valueLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        valueLabel.setTextFill(Color.web("#2c3e50"));
-        
-        container.getChildren().addAll(titleLabel, valueLabel);
-        return container;
+        card.getChildren().add(heading);
+        return card;
     }
     
-    /**
-     * Update summary labels
-     */
-    private void updateSummaryLabels() {
-        double totalCurrent = monitoringService.calculateTotalCurrent();
-        double totalPower = monitoringService.calculateTotalPower();
-        double energy = monitoringService.getEnergyTracker().getSessionEnergyKwh();
-        double cost = monitoringService.getEnergyTracker().getSessionCostGhs();
-        
-        // Fixed: Cast to HBox properly
-        ((Label) totalCurrentLabel.getChildren().get(1))
-            .setText(String.format("%.2f A", totalCurrent));
-        ((Label) totalPowerLabel.getChildren().get(1))
-            .setText(String.format("%.0f W", totalPower));
-        ((Label) energyLabel.getChildren().get(1))
-            .setText(String.format("%.3f kWh", energy));
-        ((Label) costLabel.getChildren().get(1))
-            .setText(String.format("GHS %.2f", cost));
-        
-        SystemSettings settings = monitoringService.getSettings();
-        if (settings.isOverMainLimit(totalCurrent)) {
-            statusLabel.setText("Status: DANGER - Overload!");
-            statusLabel.setTextFill(Color.web("#e74c3c"));
-        } else if (settings.isApproachingLimit(totalCurrent)) {
-            statusLabel.setText("Status: WARNING - High Load");
-            statusLabel.setTextFill(Color.web("#f39c12"));
-        } else {
-            statusLabel.setText("Status: OK");
-            statusLabel.setTextFill(Color.web("#27ae60"));
-        }
-    }
-    
-    /**
-     * Show settings dialog
-     */
     private void showSettingsDialog() {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Settings");
-        dialog.setHeaderText("System Configuration");
+        dialog.setTitle("⚙ System Settings");
+        dialog.setHeaderText("Configure Monitoring Parameters");
         
         GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
+        grid.setHgap(15);
+        grid.setVgap(15);
         grid.setPadding(new Insets(20));
         
         SystemSettings settings = monitoringService.getSettings();
@@ -418,8 +736,6 @@ public class MainController {
                     settings.setSurgeThreshold(Double.parseDouble(surgeField.getText()));
                     settings.setTariff(Double.parseDouble(tariffField.getText()));
                     settings.setSimulationMode(modeCombo.getValue());
-                    
-                    System.out.println("Settings updated: " + settings);
                 } catch (NumberFormatException e) {
                     showError("Invalid input. Please enter valid numbers.");
                 }
@@ -427,24 +743,19 @@ public class MainController {
         });
     }
     
-    /**
-     * Show error alert
-     */
     private void showError(String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);  // Fixed: Full class name
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
         alert.setTitle("Error");
-        alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
     
-    /**
-     * Shutdown cleanup
-     */
     public void shutdown() {
+        if (updateTimeline != null) {
+            updateTimeline.stop();
+        }
         if (monitoringService.isRunning()) {
             monitoringService.stop();
         }
-        System.out.println("Controller shutdown complete");
     }
 }
